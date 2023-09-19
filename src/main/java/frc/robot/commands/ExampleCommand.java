@@ -20,25 +20,34 @@ public class ExampleCommand extends CommandBase {
     // use this to accses classes subsystem instead of base subsystem
     this.subsystem = subsystem;
 
+    System.out.println("\tExampleCommand.ExampleCommand()");
+
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(subsystem);
   }
 
   // Called when the command is initially scheduled.
   @Override
-  public void initialize() {}
+  public void initialize() {
+    System.out.println("\tExampleCommand.initialize()");
+  }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
-  public void execute() {}
+  public void execute() {
+    System.out.println("\tExampleCommand.execute()");
+  }
 
   // Called once the command ends or is interrupted.
   @Override
-  public void end(boolean interrupted) {}
+  public void end(boolean interrupted) {
+    System.out.println(String.format("\tExampleCommand.end(%s)", interrupted));
+  }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
+    System.out.println("\tExampleCommand.isFinished()");
     return true;
   }
 }
