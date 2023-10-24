@@ -1,7 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.commands;
 
 import frc.robot.subsystems.ExampleSubsystem;
@@ -12,42 +8,55 @@ public class ExampleCommand extends CommandBase {
   private final ExampleSubsystem subsystem;
 
   /**
-   * Creates a new ExampleCommand.
-   *
-   * @param subsystem The subsystem used by this command.
+   * The constructor creates a new command and is automatically called one time when the command is created (with 'new' keyword).
+   * It should set up the initial state and properties of the object to ensure it's ready for use.
+   * This can take in any arguments you need. It normally uses 1 subsystem (but can take multiple when necessary), as wells as arguments for what to do, such as a joystick in the drive command or a desired position in an auto command.
+   * Example uses include saving parameters passed to the command, creating and configuring objects for the class like PID controllers, and adding subsystem requirements 
    */
   public ExampleCommand(ExampleSubsystem subsystem) {
-    // use this to accses classes subsystem instead of base subsystem
+    // use "this" to access member variable subsystem rather than local subsystem
     this.subsystem = subsystem;
 
-    System.out.println("\tExampleCommand.ExampleCommand()");
-
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(subsystem);
+    // This makes sure no other commands try to do stuff with your subsystem while you are using it.
+    addRequirements(this.subsystem);
   }
 
-  // Called when the command is initially scheduled.
+  /**
+   * initialize() is used to prepare a command for execution and is called once when the command is scheduled.
+   * It should reset the command's state since command objects can be used multiple times.
+   * Example uses include setting motor to constant speed, setting a solenoid to a certain state, and resetting variables
+   */
   @Override
   public void initialize() {
-    System.out.println("\tExampleCommand.initialize()");
   }
 
-  // Called every time the scheduler runs while the command is scheduled.
+  /**
+   * execute() is called repeatedly while a command is scheduled, about every 20ms.
+   * It should handle continuous tasks specific to the command, like updating motor outputs based on joystick inputs or utilizing control loop results.
+   * Example uses include adjusting motor speeds for real-time control, processing sensor data within a scheduled command, and using the output of a control loop.
+   */
   @Override
   public void execute() {
-    System.out.println("\tExampleCommand.execute()");
   }
 
-  // Called once the command ends or is interrupted.
-  @Override
-  public void end(boolean interrupted) {
-    System.out.println(String.format("\tExampleCommand.end(%s)", interrupted));
-  }
-
-  // Returns true when the command should end.
+  /**
+   * isFinished() finished is called repeatedly while a command is scheduled, right after execute.
+   * It should return true when you want the command to finish. end(false) is called directly after isFinished() returns true.
+   * Example uses include checking if control loop is at set point, and always returning false to end after just 1 call to execute.
+   */
   @Override
   public boolean isFinished() {
-    System.out.println("\tExampleCommand.isFinished()");
     return true;
+  }
+
+  /**
+   * end(boolean interrupted) is called once when a command ends, regardless of whether it finishes normally or is interrupted.
+   * It should wrap up the command since other commands might use the same subsystems. Once end runs the command will no longer be in the command scheduler loop.
+   * It takes in a boolean interrupted which is set to true when the command is ended without isFinished() returning true.
+   * Example uses include setting motor speeds back to zero, and setting a solenoid back to a "default" state.
+   */
+  @Override
+  public void end(boolean interrupted) {
   }
 }
