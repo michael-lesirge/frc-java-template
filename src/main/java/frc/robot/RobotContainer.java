@@ -39,9 +39,7 @@ public class RobotContainer {
    * Use this method to define your trigger->command mappings.
    */
   private void configureBindings() {
-    SmartDashboard.putData("Example", new ExampleCommand(exampleSubsystem));
-    SmartDashboard.putData("Example2", Commands.print("\tEXAMPLE"));
-    // driverJoystick.button(1).onTrue(exampleCommand);
+    driverJoystick.button(1).onTrue(exampleCommand);
   }
 
   /**
