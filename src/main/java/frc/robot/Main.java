@@ -8,16 +8,8 @@ import edu.wpi.first.wpilibj.RobotBase;
  * call.
  */
 public final class Main {
-  private Main() {
-  }
-
-  /**
-   * Main initialization function. Do not perform any initialization here.
-   *
-   * <p>
-   * If you change your main robot class, change the parameter type.
-   */
-  public static void main(String... args) {
-    RobotBase.startRobot(Robot::new);
-  }
+    public static void main(String[] args) {
+        // Congrats, you found the one main method in this entire project!
+        RobotBase.startRobot(Robot::new);
+    }
 }
