@@ -12,8 +12,8 @@ public class ExampleSubsystem extends SubsystemBase {
 
     /**
      * This method is called periodically by the CommandScheduler, about every 20ms.
-     * It should be used for updating subsystem-specific state that you don't want
-     * to offload to a Command. Try not to make it "do too much".
+     * It should be used for updating subsystem-specific state that you don't want to offload to a Command.
+     * Try not to make it "do too much".
      */
     @Override
     public void periodic() {
