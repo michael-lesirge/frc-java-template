@@ -35,6 +35,7 @@ public class SwerveModule extends SubsystemBase {
     private final CANCoderConfiguration steeringEncoderConfiguration;
     private final PIDController steeringPIDController;
 
+    private final static SwerveModuleState defaultState = new SwerveModuleState();
     private SwerveModuleState desiredState;
 
     /**
@@ -46,10 +47,7 @@ public class SwerveModule extends SubsystemBase {
      * @param angularEncoderDeviceID Device ID for the angular motor's absolute encoder
      * @param steeringEncoderZero    The zero (forward) position for the angular motor's absolute encoder
      */
-    public SwerveModule(int driveMotorDeviceId, int steeringMotorDeviceId, int steeringAbsoluteEncoderDeviceId,
-            double steeringEncoderZero) {
-        setDefaultState();
-
+    public SwerveModule(int driveMotorDeviceId, int steeringMotorDeviceId, int steeringAbsoluteEncoderDeviceId, double steeringEncoderZero) {
         // --- Drive Motor ---
         driveMotor = new CANSparkMax(driveMotorDeviceId, MotorType.kBrushless);
         driveMotor.setIdleMode(IdleMode.kBrake);
@@ -101,23 +99,26 @@ public class SwerveModule extends SubsystemBase {
      */
     @Override
     public void periodic() {
-        // Get real and desired angles of steering motor
-        // In pid the real value is often known as the measure or process variable, while the desired value is the setpoint or reference
-        final double measuredDegrees = getState().angle.getDegrees();
-        final double desiredDegrees = getDesiredState().angle.getDegrees();
-        
-        // Use the steering motor pid controller to move the motor to face the desired angle
-        final double steeringMotorSpeed = steeringPIDController.calculate(measuredDegrees, desiredDegrees);
-        steeringMotor.set(steeringMotorSpeed);
-
-        // the drive motor's pid controller is in RPM so we convert our meters per second value to that
-        // Use the drive motors pid controller to reach target velocity
-        final double driveVelocityRotationsPerMinute = (desiredState.speedMetersPerSecond * 60) / SwerveModuleConstants.WHEEL_CIRCUMFERENCE;
-        drivePIDController.setReference(driveVelocityRotationsPerMinute, CANSparkMax.ControlType.kVelocity);
+        if (desiredState != null) { 
+            // Get real and desired angles of steering motor
+            // In pid the real value is often known as the measure or process variable, while the desired value is the setpoint or reference
+            final double measuredDegrees = getState().angle.getDegrees();
+            final double desiredDegrees = desiredState.angle.getDegrees();
+            
+            // Use the steering motor pid controller to move the motor to face the desired angle
+            final double steeringMotorSpeed = steeringPIDController.calculate(measuredDegrees, desiredDegrees);
+            steeringMotor.set(steeringMotorSpeed);
+    
+            // the drive motor's pid controller is in RPM so we convert our meters per second value to that
+            // Use the drive motors pid controller to reach target velocity
+            final double driveVelocityRotationsPerMinute = (desiredState.speedMetersPerSecond * 60) / SwerveModuleConstants.WHEEL_CIRCUMFERENCE;
+            drivePIDController.setReference(driveVelocityRotationsPerMinute, CANSparkMax.ControlType.kVelocity);
+        }
     }
 
-    /** Stop drive and steering motor of swerve module */
+    /** Set desired state to nothing and stop drive and steering motor of swerve module. */
     public void stop() {
+        setDesiredState(null);
         driveMotor.stopMotor();
         steeringMotor.stopMotor();
     }
@@ -126,12 +127,13 @@ public class SwerveModule extends SubsystemBase {
      * Set the desired state of the Swerve Module to the default/starting state.
      * This should have the module facing forward and not spinning.
      */
-    public void setDefaultState() {
-        setDesiredState(new SwerveModuleState());
+    public void toDefaultState() {
+        setDesiredState(defaultState);
     }
 
     /**
-     * Get the state of the swerve module. The state is the speed of our drive motor and angle of our steering motor.
+     * Get the state of the swerve module.
+     * The state is the speed of our drive motor and angle of our steering motor.
      * 
      * @return Current state of swerve module, contains speed (in m/s) and angle as {@link Rotation2d}
      */
@@ -142,8 +144,8 @@ public class SwerveModule extends SubsystemBase {
     }
 
     /**
-     * Set the state of the swerve module. The state is the speed and angle of the
-     * swerve module. You can use {@code Rotation2d.fromDegrees()} to create angle.
+     * Set the state of the swerve module. The state is the speed and angle of the swerve module.
+     * You can use {@code Rotation2d.fromDegrees()} to create angle.
      * 
      * @param state New state of swerve module, contains speed in meters per second and angle as {@link Rotation2d}
      * @param shouldOptimize Whether to optimize the way the swerve module gets to the desired state
@@ -161,8 +163,9 @@ public class SwerveModule extends SubsystemBase {
     }
 
     /**
-     * Set the state of the swerve module. Will automatically optimize. The state is
-     * the speed and angle of the swerve module. You can use {@code Rotation2d.fromDegrees()} to create angle.
+     * Set the state of the swerve module. Will automatically optimize.
+     * The state is the speed and angle of the swerve module.
+     * You can use {@code Rotation2d.fromDegrees()} to create angle.
      * 
      * @param state New state of swerve module, contains speed in meters per second and angle.
      */
@@ -171,18 +174,18 @@ public class SwerveModule extends SubsystemBase {
     }
 
     /**
-     * Get the state of the swerve module. The state is the speed and angle of the
-     * swerve module.
+     * Get the desired state of the swerve module. The state is the speed and angle of the swerve module.
+     * 
+     * @return State that the swerve module is trying to achieve, contains speed in meters per second and angle.
      */
     public SwerveModuleState getDesiredState() {
         return desiredState;
     }
 
     /**
-     * Get the position of the swerve module. The position is the distance traveled by the drive motor
-     * and angle of the drive motor.
+     * Get the position of the swerve module. The position is the distance traveled by the drive motor and angle of the drive motor.
      * 
-     * @return Current position of swerve module, contains speed (in meters) and angle as {@link Rotation2d}
+     * @return Current position of swerve module, contains distance traveled by motor in meters and angle as {@link Rotation2d}
      */
     public SwerveModulePosition getPosition() {
         return new SwerveModulePosition(
@@ -235,6 +238,8 @@ public class SwerveModule extends SubsystemBase {
         return steeringAbsoluteEncoder.getPosition();
     }
 
+    // --- Util ---
+
     /**
      * Optimize a swerve module state so that instead of suddenly rotating the wheel (with steering motor)
      * to go a certain direction we can instead just turn a half as much and switch
@@ -265,16 +270,16 @@ public class SwerveModule extends SubsystemBase {
     }
 
     /**
-     * Move an angle into the range of the reference. Finds the relative 0 and 360
+     * Utility method. Move an angle into the range of the reference. Finds the relative 0 and 360
      * position for a scope reference and moves the new angle into that.
      * Example: {@code placeInAppropriate0To360Scope(90, 370) = 10.0}
      * {@code placeInAppropriate0To360Scope(720, 10) = 730.0}
      * 
-     * @param scopeReference The reference to find which 0-360 scope we are in. For
-     *                       example 10 is in 0-360 scope while 370 is in 360-720 scope.
-     * @param newAngle       The angle we want to move into found scope. For example
-     *                       if the scope was 0-360 and our angle was 370 it would become 10
-     * @return return the newAngle in the same scope as scopeReference
+     * @param scopeReference The reference to find which 0-360 scope we are in.
+     *                       For example {@code 10} is in {@code 0-360} scope while {@code 370} is in {@code 360-720} scope.
+     * @param newAngle       The angle we want to move into found scope.
+     *                       For example if the scope was {@code 0-360} and our angle was {@code 370} it would become {@code 10}
+     * @return               {@code newAngle} in the same scope as {@code scopeReference}
      */
     private static double placeInAppropriate0To360Scope(double scopeReference, double newAngle) {
         double lowerBound;

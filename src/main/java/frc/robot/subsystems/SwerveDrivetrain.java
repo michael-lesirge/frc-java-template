@@ -15,7 +15,6 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.SwerveDrivetrainConstants;
 
@@ -53,14 +52,6 @@ public class SwerveDrivetrain extends SubsystemBase {
      * @see https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/intro-and-chassis-speeds.html#the-chassis-speeds-class
      */
     private ChassisSpeeds desiredSpeeds;
-
-    /** 
-     * True if the robot is using a field relative coordinate system, false if using a robot relive coordinate system.
-     * If field relative, forward will be directly away from driver, no matter the rotation of the robot.
-     * If robot relative, forward will be whatever direction the robot is facing in.
-     * @see https://docs.wpilib.org/en/stable/docs/software/advanced-controls/geometry/coordinate-systems.html
-     */
-    private boolean isFieldRelative = false;
 
     // Our 4 swerve Modules
     private final SwerveModule moduleFL;
@@ -124,18 +115,16 @@ public class SwerveDrivetrain extends SubsystemBase {
         pose = odometry.update(
             gyro.getRotation2d(),
             modules(SwerveModule::getPosition, SwerveModulePosition[]::new));
-
-        // display values to shuffleboard
-        SmartDashboard.putBoolean("Field Relative?", isFieldRelative);
-
-        SmartDashboard.putNumber("SpeedsX", desiredSpeeds.vxMetersPerSecond);
-        SmartDashboard.putNumber("SpeedsY", desiredSpeeds.vyMetersPerSecond);
-        SmartDashboard.putNumber("SpeedsR", desiredSpeeds.omegaRadiansPerSecond);
     }
 
     /** Stop all swerve modules */
     public void stop() {
         modules(SwerveModule::stop);
+    }
+
+    /** Put all swerve modules to default state */
+    public void toDefaultStates() {
+        modules(SwerveModule::toDefaultState);
     }
 
     /**
@@ -150,10 +139,6 @@ public class SwerveDrivetrain extends SubsystemBase {
         // get all module states and convert them into chassis speeds
         ChassisSpeeds speeds = kinematics.toChassisSpeeds(modules(SwerveModule::getState, SwerveModuleState[]::new));
 
-        if (isFieldRelative) {
-            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, gyro.getRotation2d());
-        }
-
         return speeds;
     }
 
@@ -167,10 +152,6 @@ public class SwerveDrivetrain extends SubsystemBase {
      */
     public void setDesiredState(ChassisSpeeds speeds) {
 
-        if (isFieldRelative) {
-            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, gyro.getRotation2d());
-        }
-
         this.desiredSpeeds = speeds;
 
         SwerveModule[] modules = modules(null, SwerveModule[]::new);
@@ -179,6 +160,26 @@ public class SwerveDrivetrain extends SubsystemBase {
             modules[i].setDesiredState(states[i]);
         }
     }
+
+    /**
+     * Set speeds of robot.
+     * <li>vx: The velocity of the robot in the x (forward) direction in meter per second.</li>
+     * <li>vy: The velocity of the robot in the y (sideways) direction in meter per second. (Positive values mean the robot is moving to the left).</li>
+     * <li>omega: The angular velocity of the robot in radians per second.</li>
+     * 
+     * @param speeds Desired speeds of drivetrain (using swerve modules)
+     * @param fieldRelative True if the robot is using a field relative coordinate system, false if using a robot relive coordinate system. If field relative, forward will be directly away from driver, no matter the rotation of the robot.
+     * If robot relative, forward will be whatever direction the robot is facing in.
+     */
+    public void setDesiredState(ChassisSpeeds speeds, boolean fieldRelative) {
+
+        if (fieldRelative) {
+            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, gyro.getRotation2d());
+        }
+
+        setDesiredState(speeds);
+    }
+
 
     /** Get the desired speeds of robot */
     public ChassisSpeeds getDesiredState() {
@@ -218,32 +219,6 @@ public class SwerveDrivetrain extends SubsystemBase {
     }
 
     /**
-     * Set the robot's movement to either field or robot relative
-     * 
-     * @param fieldRelative If true, movement will be field relative
-     */
-    public void setFieldRelative(boolean fieldRelative) {
-        this.isFieldRelative = fieldRelative;
-    }
-
-    /**
-     * Toggle the robot movement between relative to the field forward and relative
-     * to the robot forward
-     */
-    public void toggleFieldRelative() {
-        isFieldRelative = !isFieldRelative;
-    }
-
-    /**
-     * Check whether robot movement is relative to field or is relative to robot
-     * 
-     * @return True if movement is field relative
-     */
-    public boolean isFieldRelative() {
-        return isFieldRelative;
-    }
-
-    /**
      * Get yaw (rotation) of robot
      * 
      * @return the current yaw value from -180 to 180 degrees. 0 whatever direction
@@ -253,8 +228,10 @@ public class SwerveDrivetrain extends SubsystemBase {
         return Rotation2d.fromDegrees(gyro.getYaw());
     }
 
+    // --- Util ---
+
     /**
-     * Function to easily run a function on each swerve module
+     * Utility method. Function to easily run a function on each swerve module
      * 
      * @param func Function to run on each swerve module, takes one argument and returns nothing, operates via side effects.
      */
@@ -263,14 +240,14 @@ public class SwerveDrivetrain extends SubsystemBase {
     }
 
     /**
-     * Function to easily run a function on each swerve module and collect results to array.
+     * Utility method. Function to easily run a function on each swerve module and collect results to array.
      * 
      * @param <T> Type that is returned by function and should be collected
      * @param func Function that gets some data off each swerve module
      * @param arrayInitializer constructor function for array to collect results in. Use T[]::new
      * @return Array of results from func.
      */
-    private <T> T[] modules(Function<? super SwerveModule, ? super T> func, IntFunction<T[]> arrayInitializer) {
+    private <T> T[] modules(Function<? super SwerveModule, ? extends T> func, IntFunction<T[]> arrayInitializer) {
         if (func == null) return allModules.toArray(arrayInitializer);
         return allModules.map(func).toArray(arrayInitializer);
     }
