@@ -48,28 +48,21 @@ public class OptionButton {
         this.mode = mode;
 
         if (mode != ActivationMode.HOLD) {
-            joystick.button(buttonId).onTrue(new InstantCommand(this::toggleOn));
-            joystick.button(buttonId).onFalse(new InstantCommand(this::toggleOff));
+            joystick.button(buttonId).onTrue(new InstantCommand(this::toggle));
         }
     }
 
     /** @return state of button before change */
-    public boolean toggleOn() {
-        final boolean startingState = isToggled;
-        isToggled = true;
-        return startingState;
-    }
-    
-    /** @return state of button before change */
-    public boolean toggleOff() {
-        final boolean startingState = isToggled;
-        isToggled = false;
-        return startingState;
+    private void toggle() {
+        isToggled = !isToggled;
     }
 
     public boolean getState() {
         switch (mode) {  
-            case TAP: return toggleOff();
+            case TAP: if (isToggled) {
+                isToggled = false;
+                return true;
+            }
             case HOLD: return joystick.button(buttonId).getAsBoolean();       
             case TOGGLE: return isToggled;
             default: return false; 

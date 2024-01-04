@@ -26,16 +26,16 @@ public class SwerveDriveControl extends CommandBase {
 	 * @param drivetrain The drivetrain of the robot
 	 * @param joystick The joystick used to control drivetrain
 	 */
-    public SwerveDriveControl(SwerveDrivetrain drivetrain, CommandJoystick joystick) {
+    public SwerveDriveControl(SwerveDrivetrain drivetrain, CommandJoystick driverJoystick) {
         
         // save parameters
         this.drivetrain = drivetrain;
-        this.joystick = joystick;
+        this.joystick = driverJoystick;
 
         // Create and configure buttons
-        preciseModeButton = new OptionButton(joystick, 1, ActivationMode.HOLD);
-        boostModeButton = new OptionButton(joystick, 0, ActivationMode.TOGGLE);
-        fieldRelieveButton = new OptionButton(joystick, 2, ActivationMode.TOGGLE);
+        preciseModeButton = new OptionButton(joystick, 2, ActivationMode.TOGGLE);
+        boostModeButton = new OptionButton(joystick, 1, ActivationMode.HOLD);
+        fieldRelieveButton = new OptionButton(joystick, 3, ActivationMode.TOGGLE);
 
         // Tell the command schedular we are using the drivetrain
         addRequirements(drivetrain);
@@ -43,7 +43,7 @@ public class SwerveDriveControl extends CommandBase {
 
     /**
      * The initial subroutine of a command. Called once when the command is initially scheduled.
-     * Put all swerve modules to default state, staying still and face forwards.
+     * Puts all swerve modules to the default state, staying still and facing forwards.
      */
     @Override
     public void initialize() {
@@ -57,9 +57,9 @@ public class SwerveDriveControl extends CommandBase {
     public void execute() {
 
         // Get joystick inputs
-        double speedX = applyJoystickDeadzone(-joystick.getX());
-		double speedY = applyJoystickDeadzone(-joystick.getY());
-		double speedOmega = applyJoystickDeadzone(joystick.getTwist());
+        final double speedX = applyJoystickDeadzone(-joystick.getX(), DriverConstants.JOYSTICK_DEAD_ZONE);
+		final double speedY = applyJoystickDeadzone(-joystick.getY(), DriverConstants.JOYSTICK_DEAD_ZONE);
+		final double speedOmega = applyJoystickDeadzone(joystick.getTwist(), DriverConstants.JOYSTICK_DEAD_ZONE);
 
         // // Code for rotating with buttons if driver prefers 
         // double speedOmega = 0;
@@ -73,14 +73,14 @@ public class SwerveDriveControl extends CommandBase {
 		// 	speedOmega -= OperatorConstants.maxSpeedOptionsRotation[1];
 		// }
 
-        // Level of speed from Precise, Normal, Boost
-
-        // find our speed level, default is one
+        
+        // Level of speed from Precise, to Normal, to Boost
+        // Find our speed level, default is one (Normal)
         final int speedLevel = 1
             - preciseModeButton.getStateInt()
             + boostModeButton.getStateInt();
 
-        // for testing
+        // Can be changed for testing
         final int speedCoefficient = 1;
 
         final boolean isFieldRelative = fieldRelieveButton.getState();
@@ -106,7 +106,6 @@ public class SwerveDriveControl extends CommandBase {
         SmartDashboard.putNumber("Real SpeedsOmega", realSpeeds.omegaRadiansPerSecond);
 
         drivetrain.setDesiredState(speeds, isFieldRelative);
-
     }
 
     /**
@@ -132,25 +131,16 @@ public class SwerveDriveControl extends CommandBase {
     /**
      * Utility method. Apply a deadzone to the joystick output to account for stick drift and small bumps.
      * 
-     * @param joystickValue Value between -1 and 1 from joystick  X or Y axis
-     * @return 0 if joystickValue is in deadzone, else the value scaled to the new control area
+     * @param joystickValue Value in [-1, 1] from joystick axis
+     * @return {@code 0} if {@code |joystickValue| <= deadzone}, else the {@code joystickValue} scaled to the new control area
      */
-    private static double applyJoystickDeadzone(double joystickValue) {
-
-        final double deadzone = DriverConstants.JOYSTICK_DEAD_ZONE;
-
+    private static double applyJoystickDeadzone(double joystickValue, double deadzone) {
         if (Math.abs(joystickValue) <= deadzone) {
             // If the joystick |value| is in the deadzone than zero it out
-            joystickValue = 0;
-        }
-        else {
-            // if not than just move the value closer to zero by deadzone so that we don't just from 0 to 0.2 (or whatever deadzone is)
-            joystickValue -= deadzone * (joystickValue / Math.abs(joystickValue));
+            return 0;
         }
 
-        // scale value back up to account for subtraction
-        joystickValue *= 1 + deadzone;
-
-        return joystickValue;
+        // scale value from the range [0, 1] to (deadzone, 1]
+        return joystickValue * (1 + deadzone) - Math.signum(joystickValue) * deadzone;
     }
 }

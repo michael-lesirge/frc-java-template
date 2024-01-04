@@ -50,28 +50,28 @@ public final class Constants {
         public static final double DRIVE_PID_FF = 0.090944883322;
 
         // Front left
-		public static final int ANGULAR_MOTOR_ID_FL = 13;
-		public static final int VELOCITY_MOTOR_ID_FL = 12;
-		public static final int ANGULAR_MOTOR_ENCODER_ID_FL = 26;
-		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_FL = 0;
+		public static final int ANGULAR_MOTOR_ID_FL = 0;
+		public static final int VELOCITY_MOTOR_ID_FL = 1;
+		public static final int ANGULAR_MOTOR_ENCODER_ID_FL = 2;
+		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_FL = 3;
         
         // Front right
-		public static final int ANGULAR_MOTOR_ID_FR = 8;
-		public static final int VELOCITY_MOTOR_ID_FR = 15;
-		public static final int ANGULAR_MOTOR_ENCODER_ID_FR = 27;
-		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_FR = 0;
+		public static final int ANGULAR_MOTOR_ID_FR = 4;
+		public static final int VELOCITY_MOTOR_ID_FR = 5;
+		public static final int ANGULAR_MOTOR_ENCODER_ID_FR = 6;
+		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_FR = 7;
 
         // Back left
-		public static final int ANGULAR_MOTOR_ID_BL = 2;
-		public static final int VELOCITY_MOTOR_ID_BL = 31;
-		public static final int ANGULAR_MOTOR_ENCODER_ID_BL = 25;
-		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_BL = 0;
+		public static final int ANGULAR_MOTOR_ID_BL = 8;
+		public static final int VELOCITY_MOTOR_ID_BL = 9;
+		public static final int ANGULAR_MOTOR_ENCODER_ID_BL = 10;
+		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_BL = 11;
         
         // Back right
-		public static final int ANGULAR_MOTOR_ID_BR = 1;
-		public static final int VELOCITY_MOTOR_ID_BR = 9;
-		public static final int ANGULAR_MOTOR_ENCODER_ID_BR = 28;
-		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_BR = 0;
+		public static final int ANGULAR_MOTOR_ID_BR = 12;
+		public static final int VELOCITY_MOTOR_ID_BR = 13;
+		public static final int ANGULAR_MOTOR_ENCODER_ID_BR = 14;
+		public static final int ANGULAR_MOTOR_ENCODER_OFFSET_BR = 15;
     }
 
     public static class SwerveDrivetrainConstants {

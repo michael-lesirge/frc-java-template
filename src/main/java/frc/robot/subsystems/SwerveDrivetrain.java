@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
@@ -16,7 +15,6 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.SwerveDrivetrainConstants;
 
 /**
  * Subsystem for full drive train of robot. Contains 4 {@link SwerveModule} subsystems.
@@ -24,22 +22,12 @@ import frc.robot.Constants.SwerveDrivetrainConstants;
  * @see <a href="https://youtu.be/X2UjzPi35gU">Swerve Drive Demo</a>
  */
 public class SwerveDrivetrain extends SubsystemBase {
-    // Locations of wheels relative to robot center
-    private static final Translation2d locationFL = new Translation2d(
-            SwerveDrivetrainConstants.MODULE_LOCATION_X, SwerveDrivetrainConstants.MODULE_LOCATION_Y);
-    private static final Translation2d locationFR = new Translation2d(
-            SwerveDrivetrainConstants.MODULE_LOCATION_X, -SwerveDrivetrainConstants.MODULE_LOCATION_Y);
-    private static final Translation2d locationBL = new Translation2d(
-            -SwerveDrivetrainConstants.MODULE_LOCATION_X, SwerveDrivetrainConstants.MODULE_LOCATION_Y);
-    private static final Translation2d locationBR = new Translation2d(
-            -SwerveDrivetrainConstants.MODULE_LOCATION_X, -SwerveDrivetrainConstants.MODULE_LOCATION_Y);
-
     /**
      * The SwerveDriveKinematics class is a useful tool that converts between a ChassisSpeeds object
      * and several SwerveModuleState objects, which contains velocities and angles for each swerve module of a swerve drive robot.
      * @see https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-kinematics.html
      */
-    private static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(locationFL, locationFR, locationBL, locationBR);
+    private final SwerveDriveKinematics kinematics;
 
     /**
      * The SwerveDriveOdometry class can be used to track the position of a swerve drive robot on the field *
@@ -59,12 +47,10 @@ public class SwerveDrivetrain extends SubsystemBase {
     private final SwerveModule moduleBL;
     private final SwerveModule moduleBR;
 
-    /** All swerve modules in Java Stream Object */
-    private final Stream<SwerveModule> allModules;
-
     /**
      * The Gyroscope on the robot. It gives data on Pitch, Yaw, and Roll of robot, as well as many other things
      * @see https://www.kauailabs.com/public_files/navx-mxp/apidocs/java/com/kauailabs/navx/frc/AHRS.html
+     * @see https://ibb.co/dJrL259
      */
     private final AHRS gyro;
 
@@ -93,7 +79,9 @@ public class SwerveDrivetrain extends SubsystemBase {
         moduleBL = swerveModuleBL;
         moduleBR = swerveModuleBR;
         
-        allModules = Stream.of(moduleFL, moduleFR, moduleBL, moduleBR);
+        kinematics = new SwerveDriveKinematics(
+            modules(SwerveModule::getDistanceFromCenter, Translation2d[]::new)
+        );
 
         // create starting state for odometry
         odometry = new SwerveDriveOdometry(
@@ -155,7 +143,8 @@ public class SwerveDrivetrain extends SubsystemBase {
         this.desiredSpeeds = speeds;
 
         SwerveModule[] modules = modules(null, SwerveModule[]::new);
-        SwerveModuleState[] states = kinematics.toSwerveModuleStates(speeds);
+        SwerveModuleState[] states = kinematics.toSwerveModuleStates(desiredSpeeds);
+
         for (int i = 0; i < modules.length; i++) {
             modules[i].setDesiredState(states[i]);
         }
@@ -166,6 +155,8 @@ public class SwerveDrivetrain extends SubsystemBase {
      * <li>vx: The velocity of the robot in the x (forward) direction in meter per second.</li>
      * <li>vy: The velocity of the robot in the y (sideways) direction in meter per second. (Positive values mean the robot is moving to the left).</li>
      * <li>omega: The angular velocity of the robot in radians per second.</li>
+     * 
+     * @see https://ibb.co/dJrL259
      * 
      * @param speeds Desired speeds of drivetrain (using swerve modules)
      * @param fieldRelative True if the robot is using a field relative coordinate system, false if using a robot relive coordinate system. If field relative, forward will be directly away from driver, no matter the rotation of the robot.
@@ -209,23 +200,14 @@ public class SwerveDrivetrain extends SubsystemBase {
     /**
      * Zero the yaw of the gyro. Can only change zero yaw when sensor is done calibrating
      * 
-     * @return Was gyro able to zero yaw.
+     * @return was gyro able to zero yaw
      */
     public boolean zeroYaw() {
-        if (gyro.isCalibrating())
-            return false;
-        gyro.zeroYaw();
-        return true;
-    }
+        if (gyro.isCalibrating()) return false;
 
-    /**
-     * Get yaw (rotation) of robot
-     * 
-     * @return the current yaw value from -180 to 180 degrees. 0 whatever direction
-     *         the robot starts in.
-     */
-    public Rotation2d getYaw() {
-        return Rotation2d.fromDegrees(gyro.getYaw());
+        gyro.zeroYaw();
+
+        return true;
     }
 
     // --- Util ---
@@ -233,22 +215,25 @@ public class SwerveDrivetrain extends SubsystemBase {
     /**
      * Utility method. Function to easily run a function on each swerve module
      * 
-     * @param func Function to run on each swerve module, takes one argument and returns nothing, operates via side effects.
+     * @param func function to run on each swerve module, takes one argument and returns nothing, operates via side effects.
      */
     private void modules(Consumer<SwerveModule> func) {
-        allModules.forEach(func);
+        Stream.of(moduleFL, moduleFR, moduleBL, moduleBR).forEach(func);
     }
 
     /**
      * Utility method. Function to easily run a function on each swerve module and collect results to array.
+     * Insures that we don't mix up order of swerve modules, as this could lead to hard to spot bugs.
      * 
-     * @param <T> Type that is returned by function and should be collected
-     * @param func Function that gets some data off each swerve module
-     * @param arrayInitializer constructor function for array to collect results in. Use T[]::new
-     * @return Array of results from func.
+     * @param <T> type that is returned by function and should be collected
+     * @param func function that gets some data off each swerve module
+     * @param arrayInitializer constructor function for array to collect results in, use T[]::new
+     * @return array of results from func.
      */
     private <T> T[] modules(Function<? super SwerveModule, ? extends T> func, IntFunction<T[]> arrayInitializer) {
-        if (func == null) return allModules.toArray(arrayInitializer);
-        return allModules.map(func).toArray(arrayInitializer);
-    }
+        Stream<SwerveModule> stream = Stream.of(moduleFL, moduleFR, moduleBL, moduleBR);
+
+        if (func == null) return stream.toArray(arrayInitializer);
+        return stream.map(func).toArray(arrayInitializer);
+    }   
 }

@@ -12,6 +12,7 @@ import com.revrobotics.SparkMaxPIDController;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -36,18 +37,24 @@ public class SwerveModule extends SubsystemBase {
     private final PIDController steeringPIDController;
 
     private final static SwerveModuleState defaultState = new SwerveModuleState();
+
+    /** Represents the state the swerve module wants to be in */
     private SwerveModuleState desiredState;
+
+    /** Locations of the wheel relative to the physical center of the robot. */
+    private final Translation2d distanceFromCenter;
 
     /**
      * Constructor for an individual Swerve Module.
      * Sets up both drive and angular motor for swerve module as well as systems to monitor and control them
      * 
-     * @param velocityMotorDeviceID  Device ID for drive motor
-     * @param steeringMotorDeviceId  Device ID for steering motor
-     * @param angularEncoderDeviceID Device ID for the angular motor's absolute encoder
-     * @param steeringEncoderZero    The zero (forward) position for the angular motor's absolute encoder
+     * @param velocityMotorDeviceID  device ID for drive motor
+     * @param steeringMotorDeviceId  device ID for steering motor
+     * @param angularEncoderDeviceID device ID for the angular motor's absolute encoder
+     * @param distanceFromCenter     distance from center of robot to center of swerve module
+     * @param steeringEncoderZero    the zero (forward) position for the angular motor's absolute encoder
      */
-    public SwerveModule(int driveMotorDeviceId, int steeringMotorDeviceId, int steeringAbsoluteEncoderDeviceId, double steeringEncoderZero) {
+    public SwerveModule(int driveMotorDeviceId, int steeringMotorDeviceId, int steeringAbsoluteEncoderDeviceId, double steeringEncoderZero, Translation2d distanceFromCenter) {
         // --- Drive Motor ---
         driveMotor = new CANSparkMax(driveMotorDeviceId, MotorType.kBrushless);
         driveMotor.setIdleMode(IdleMode.kBrake);
@@ -79,8 +86,8 @@ public class SwerveModule extends SubsystemBase {
         steeringEncoderConfiguration.sensorTimeBase = SensorTimeBase.PerSecond;
 
         // set offset so zero is forward
-        steeringEncoderConfiguration.magnetOffsetDegrees = steeringEncoderZero;
         steeringEncoderConfiguration.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360;
+        steeringEncoderConfiguration.magnetOffsetDegrees = steeringEncoderZero;
 
         steeringAbsoluteEncoder = new CANCoder(steeringAbsoluteEncoderDeviceId, "rio");
         steeringAbsoluteEncoder.configAllSettings(steeringEncoderConfiguration);
@@ -91,6 +98,9 @@ public class SwerveModule extends SubsystemBase {
                 SwerveModuleConstants.STEERING_PID_I,
                 SwerveModuleConstants.STEERING_PID_D);
         steeringPIDController.enableContinuousInput(0, 360);
+
+        // --- Save other values ---
+        this.distanceFromCenter = distanceFromCenter;
     }
 
     /**
@@ -131,6 +141,11 @@ public class SwerveModule extends SubsystemBase {
         setDesiredState(defaultState);
     }
 
+    /** Get locations of the wheel relative to the physical center of the robot. */
+    public Translation2d getDistanceFromCenter() {
+        return distanceFromCenter;
+    }
+
     /**
      * Get the state of the swerve module.
      * The state is the speed of our drive motor and angle of our steering motor.
@@ -152,14 +167,10 @@ public class SwerveModule extends SubsystemBase {
      */
     public void setDesiredState(SwerveModuleState state, boolean shouldOptimize) {
         if (shouldOptimize) {
-            // desiredState = SwerveModuleState.optimize(state, getState().angle)
-
-            // This is a custom optimize function, since default WPILib optimize
-            // (SwerveModuleState.optimize) assumes continuous controller
-            desiredState = optimize(state, getState().angle);
-        } else {
-            desiredState = state;
+            state = optimize(state, getState().angle);
         }
+        
+        this.desiredState = state;
     }
 
     /**
