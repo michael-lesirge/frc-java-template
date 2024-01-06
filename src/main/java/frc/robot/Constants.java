@@ -2,7 +2,7 @@ package frc.robot;
 
 /**
  * Use Constants as convenient to hold robot-wide numerical or boolean constants.
- * All constants (final) should be declared globally (public static). Do not put any functionality in this class.
+ * Everything here should be accessible everywhere (public), only exist once (static), and not change (final).
  */
 public final class Constants {
 

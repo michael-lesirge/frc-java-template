@@ -1,13 +1,13 @@
 package frc.robot.commands;
 
-import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.subsystems.TemplateSubsystem;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 
 // How to make Command (ignore image instructions): https://compendium.readthedocs.io/en/latest/tasks/commands/commands.html
 
 /** An example command that uses an example subsystem. */
-public class ExampleCommand extends CommandBase {
-    private final ExampleSubsystem subsystem;
+public class TemplateCommand extends CommandBase {
+    private final TemplateSubsystem subsystem;
 
     /**
      * The constructor creates a new command and is automatically called one time when the command is created (with 'new' keyword).
@@ -16,7 +16,7 @@ public class ExampleCommand extends CommandBase {
      * as wells as arguments for what to do, such as a joystick in the drive command or a desired position in an auto command.
      * Example uses include saving parameters passed to the command, creating and configuring objects for the class like PID controllers, and adding subsystem requirements
      */
-    public ExampleCommand(ExampleSubsystem subsystem) {
+    public TemplateCommand(TemplateSubsystem subsystem) {
         // use "this" to access member variable subsystem rather than local subsystem
         this.subsystem = subsystem;
 

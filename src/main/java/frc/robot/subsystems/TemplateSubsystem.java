@@ -4,9 +4,9 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 // How to make Subsystem (ignore image instructions): https://compendium.readthedocs.io/en/latest/tasks/subsystems/subsystems.html
 
-public class ExampleSubsystem extends SubsystemBase {
+public class TemplateSubsystem extends SubsystemBase {
     /** Constructor. Creates a new ExampleSubsystem. */
-    public ExampleSubsystem() {
+    public TemplateSubsystem() {
 
     }
 
